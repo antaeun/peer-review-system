@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum RoundStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+model Employee {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  team      String
+  position  String
+  role      Role     @default(EMPLOYEE)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tokens       EvalToken[]
+  exclusionsBy Exclusion[]   @relation("excluder")
+  exclusionsOf Exclusion[]   @relation("excluded")
+  responsesBy  ResponseRaw[] @relation("evaluator")
+  responsesOf  ResponseRaw[] @relation("target")
+  results      Result[]
+}
+
+model EvalRound {
+  id        String      @id @default(cuid())
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  status    RoundStatus @default(DRAFT)
+  message   String?
+  createdAt DateTime    @default(now())
+
+  tokens        EvalToken[]
+  exclusions    Exclusion[]
+  responses     ResponseRaw[]
+  anonResponses ResponseAnon[]
+  results       Result[]
+}
+
+model EvalToken {
+  id                 String    @id @default(cuid())
+  token              String    @unique @default(uuid())
+  roundId            String
+  employeeId         String
+  isSubmitted        Boolean   @default(false)
+  submittedAt        DateTime?
+  exclusionConfirmed Boolean   @default(false)
+
+  round    EvalRound @relation(fields: [roundId], references: [id])
+  employee Employee  @relation(fields: [employeeId], references: [id])
+
+  @@unique([roundId, employeeId])
+}
+
+model Exclusion {
+  id          String   @id @default(cuid())
+  roundId     String
+  reason      String
+  confirmedAt DateTime
+  evaluatorId String
+  targetId    String
+
+  round     EvalRound @relation(fields: [roundId], references: [id])
+  evaluator Employee  @relation("excluder", fields: [evaluatorId], references: [id])
+  target    Employee  @relation("excluded", fields: [targetId], references: [id])
+
+  @@unique([roundId, evaluatorId, targetId])
+}
+
+model ResponseRaw {
+  id          String   @id @default(cuid())
+  roundId     String
+  evaluatorId String?
+  targetId    String
+  scores      Json
+  strength    String?
+  improvement String?
+  isDraft     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  round     EvalRound @relation(fields: [roundId], references: [id])
+  evaluator Employee? @relation("evaluator", fields: [evaluatorId], references: [id])
+  target    Employee  @relation("target", fields: [targetId], references: [id])
+
+  @@unique([roundId, evaluatorId, targetId])
+}
+
+model ResponseAnon {
+  id          String  @id @default(cuid())
+  roundId     String
+  targetId    String
+  scores      Json
+  strength    String?
+  improvement String?
+
+  round EvalRound @relation(fields: [roundId], references: [id])
+}
+
+model Result {
+  id        String @id @default(cuid())
+  roundId   String
+  targetId  String
+  avgScores Json
+  totalAvg  Float
+  evalCount Int
+
+  round  EvalRound @relation(fields: [roundId], references: [id])
+  target Employee  @relation(fields: [targetId], references: [id])
+
+  @@unique([roundId, targetId])
+}
