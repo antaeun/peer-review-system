@@ -27,12 +27,11 @@ export async function GET(
     );
   }
 
-  // 자기 자신과 ADMIN을 제외한 모든 활성 직원
+  // 자기 자신을 제외한 모든 활성 직원
   const teammates = await prisma.employee.findMany({
     where: {
       id: { not: evalToken.employeeId },
       isActive: true,
-      role: { not: "ADMIN" },
     },
     orderBy: [{ team: "asc" }, { name: "asc" }],
   });

@@ -13,9 +13,9 @@ export async function POST(
     return NextResponse.json({ error: "Round not found" }, { status: 404 });
   }
 
-  // ADMIN 제외, 활성 직원만
+  // 활성 직원만
   const employees = await prisma.employee.findMany({
-    where: { isActive: true, role: { not: "ADMIN" } },
+    where: { isActive: true },
   });
 
   const existingTokens = await prisma.evalToken.findMany({
