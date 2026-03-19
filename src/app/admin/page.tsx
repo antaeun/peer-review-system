@@ -127,7 +127,7 @@ export default function AdminPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex gap-4 text-sm text-muted-foreground">
                           <span>참여자: {round._count.tokens}명</span>
-                          <span>응답: {round._count.responses}건</span>
+                          <span>제출: {round._count.responses}건</span>
                         </div>
                         <Button
                           variant="ghost"
