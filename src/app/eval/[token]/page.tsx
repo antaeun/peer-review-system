@@ -151,6 +151,33 @@ export default function EvalPage({
     }));
   }
 
+  function validateCurrentTarget(): boolean {
+    if (!currentTarget) return false;
+    const targetScores = scores[currentTarget.id];
+    if (!targetScores) {
+      toast.error("모든 항목을 평가해주세요");
+      return false;
+    }
+    for (const q of EVAL_QUESTIONS) {
+      if (targetScores[q.id] === undefined || targetScores[q.id] === 0) {
+        toast.error(`"${q.text}" 항목을 평가해주세요`);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function goToNext() {
+    if (!validateCurrentTarget()) return;
+    setCurrentIdx(currentIdx + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function goToPrev() {
+    setCurrentIdx(currentIdx - 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function saveDraft() {
     const responses = evalTargets
       .filter((t) => scores[t.id])
@@ -437,7 +464,7 @@ export default function EvalPage({
                   {currentIdx > 0 && (
                     <Button
                       variant="outline"
-                      onClick={() => setCurrentIdx(currentIdx - 1)}
+                      onClick={goToPrev}
                     >
                       이전
                     </Button>
@@ -448,7 +475,7 @@ export default function EvalPage({
                     임시 저장
                   </Button>
                   {currentIdx < evalTargets.length - 1 ? (
-                    <Button onClick={() => setCurrentIdx(currentIdx + 1)}>
+                    <Button onClick={goToNext}>
                       다음
                     </Button>
                   ) : (
