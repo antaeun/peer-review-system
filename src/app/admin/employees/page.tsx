@@ -74,8 +74,12 @@ export default function EmployeesPage() {
 
   const fetchEmployees = () => {
     fetch("/api/employees")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("직원 목록을 불러오지 못했습니다");
+        return r.json();
+      })
       .then(setEmployees)
+      .catch((err) => toast.error(err.message))
       .finally(() => setLoading(false));
   };
 
