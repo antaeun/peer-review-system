@@ -23,7 +23,7 @@ interface Round {
   endDate: string;
   status: "DRAFT" | "ACTIVE" | "CLOSED" | "ARCHIVED";
   createdAt: string;
-  _count: { tokens: number; responses: number };
+  _count: { tokens: number; responses: number; submitted: number };
 }
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -127,7 +127,7 @@ export default function AdminPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex gap-4 text-sm text-muted-foreground">
                           <span>참여자: {round._count.tokens}명</span>
-                          <span>제출: {round._count.responses}건</span>
+                          <span>제출: {round._count.submitted}명</span>
                         </div>
                         <Button
                           variant="ghost"

@@ -6,9 +6,19 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { tokens: true, responses: true } },
+      tokens: { select: { isSubmitted: true } },
     },
   });
-  return NextResponse.json(rounds);
+
+  const result = rounds.map(({ tokens, ...round }) => ({
+    ...round,
+    _count: {
+      ...round._count,
+      submitted: tokens.filter((t) => t.isSubmitted).length,
+    },
+  }));
+
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {
