@@ -86,7 +86,10 @@ function downloadTeamCSV(
       r.totalAvg.toFixed(1),
       getItemAvg(r).toFixed(1),
       r.evalCount,
-      ...EVAL_QUESTIONS.map((q) => r.avgScores[q.id]?.toFixed(2) ?? "-"),
+      ...EVAL_QUESTIONS.map((q) => {
+        const v = r.avgScores[q.id];
+        return v === undefined || v === null ? "-" : v === 0 ? "N/A" : v.toFixed(2);
+      }),
       strengths,
       improvements,
     ];
@@ -276,7 +279,7 @@ export default function ResultsPage({
                         <Badge variant="outline">{q.category}</Badge>
                       </TableCell>
                       <TableCell>
-                        {selectedResult.avgScores[q.id]?.toFixed(2) ?? "-"}
+                        {selectedResult.avgScores[q.id] === 0 ? "N/A" : selectedResult.avgScores[q.id]?.toFixed(2) ?? "-"}
                       </TableCell>
                     </TableRow>
                   ))}
