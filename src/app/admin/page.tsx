@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { LogOut, Plus, Users } from "lucide-react";
+import { LogOut, Plus, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 interface Round {
@@ -42,11 +43,29 @@ export default function AdminPage() {
     router.push("/login");
   }
 
-  useEffect(() => {
+  function fetchRounds() {
     fetch("/api/rounds")
       .then((r) => r.json())
       .then(setRounds)
       .finally(() => setLoading(false));
+  }
+
+  async function handleDeleteRound(e: React.MouseEvent, round: Round) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`"${round.title}" 라운드를 삭제하시겠습니까? 모든 관련 데이터가 삭제됩니다.`)) return;
+    try {
+      const res = await fetch(`/api/rounds/${round.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.success("라운드가 삭제되었습니다");
+      fetchRounds();
+    } catch {
+      toast.error("삭제에 실패했습니다");
+    }
+  }
+
+  useEffect(() => {
+    fetchRounds();
   }, []);
 
   return (
@@ -105,9 +124,19 @@ export default function AdminPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <span>참여자: {round._count.tokens}명</span>
-                        <span>응답: {round._count.responses}건</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-4 text-sm text-muted-foreground">
+                          <span>참여자: {round._count.tokens}명</span>
+                          <span>응답: {round._count.responses}건</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={(e) => handleDeleteRound(e, round)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

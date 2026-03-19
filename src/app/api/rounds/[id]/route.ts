@@ -36,3 +36,25 @@ export async function PATCH(
 
   return NextResponse.json(round);
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  try {
+    // 관련 데이터를 순서대로 삭제 (외래키 제약)
+    await prisma.result.deleteMany({ where: { roundId: id } });
+    await prisma.responseAnon.deleteMany({ where: { roundId: id } });
+    await prisma.responseRaw.deleteMany({ where: { roundId: id } });
+    await prisma.exclusion.deleteMany({ where: { roundId: id } });
+    await prisma.evalToken.deleteMany({ where: { roundId: id } });
+    await prisma.evalRound.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/rounds/[id] error:", error);
+    return NextResponse.json({ error: "삭제에 실패했습니다" }, { status: 500 });
+  }
+}
