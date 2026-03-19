@@ -44,8 +44,9 @@ interface RoundData {
   anonResponses: AnonResponse[];
 }
 
-function getTotalScore(r: ResultItem) {
-  return Object.values(r.avgScores).reduce((sum, v) => sum + v, 0);
+function getItemAvg(r: ResultItem) {
+  const valid = Object.values(r.avgScores).filter((v) => v > 0);
+  return valid.length > 0 ? valid.reduce((sum, v) => sum + v, 0) / valid.length : 0;
 }
 
 function downloadTeamCSV(
@@ -68,7 +69,6 @@ function downloadTeamCSV(
   ];
 
   const rows = results.map((r, i) => {
-    const totalScore = getTotalScore(r);
     const comments = anonResponses.filter((a) => a.targetId === r.targetId);
     const strengths = comments
       .map((c) => c.strength)
@@ -83,8 +83,8 @@ function downloadTeamCSV(
       i + 1,
       r.target.name,
       r.target.position,
-      totalScore.toFixed(1),
       r.totalAvg.toFixed(1),
+      getItemAvg(r).toFixed(1),
       r.evalCount,
       ...EVAL_QUESTIONS.map((q) => r.avgScores[q.id]?.toFixed(2) ?? "-"),
       strengths,
@@ -210,18 +210,17 @@ export default function ResultsPage({
                 </TableHeader>
                 <TableBody>
                   {teamResults.map((r, i) => {
-                    const totalScore = getTotalScore(r);
                     return (
                       <TableRow key={r.id}>
                         <TableCell>{i + 1}</TableCell>
                         <TableCell className="font-medium">{r.target.name}</TableCell>
                         <TableCell>{r.target.position}</TableCell>
                         <TableCell>
-                          <Badge variant={totalScore >= 80 ? "default" : totalScore >= 60 ? "secondary" : "destructive"}>
-                            {totalScore.toFixed(1)}
+                          <Badge variant={r.totalAvg >= 80 ? "default" : r.totalAvg >= 60 ? "secondary" : "destructive"}>
+                            {r.totalAvg.toFixed(1)}
                           </Badge>
                         </TableCell>
-                        <TableCell>{r.totalAvg.toFixed(1)}</TableCell>
+                        <TableCell>{getItemAvg(r).toFixed(1)}</TableCell>
                         <TableCell>{r.evalCount}명</TableCell>
                         <TableCell>
                           <Button
@@ -251,11 +250,11 @@ export default function ResultsPage({
                 </CardTitle>
                 <div className="text-right">
                   <div className="text-2xl font-bold">
-                    {getTotalScore(selectedResult).toFixed(1)}
+                    {selectedResult.totalAvg.toFixed(1)}
                     <span className="text-sm font-normal text-muted-foreground"> / 100점</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    항목 평균 {selectedResult.totalAvg.toFixed(1)}점 · 평가자 {selectedResult.evalCount}명
+                    항목 평균 {getItemAvg(selectedResult).toFixed(1)}점 · 평가자 {selectedResult.evalCount}명
                   </div>
                 </div>
               </div>
