@@ -13,12 +13,7 @@ export const EVAL_QUESTIONS = [
 ] as const;
 
 // 항목당 10점 만점, 10개 항목 = 100점 만점
-export const SCORE_OPTIONS = [2, 4, 6, 8, 10] as const;
+export const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export const SCORE_LABELS: Record<number, string> = {
-  2: "매우 부족",
-  4: "부족",
-  6: "보통",
-  8: "우수",
-  10: "매우 우수",
-};
+// 평가 불가 표시 값
+export const SCORE_NA = -1;

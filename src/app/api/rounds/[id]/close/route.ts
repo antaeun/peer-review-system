@@ -52,16 +52,26 @@ export async function POST(
     const keys = Object.keys(group.scores[0] || {});
     const avgScores: Record<string, number> = {};
     let totalSum = 0;
+    let validKeyCount = 0;
 
     for (const key of keys) {
-      const sum = group.scores.reduce((acc, s) => acc + (s[key] || 0), 0);
-      avgScores[key] = Math.round((sum / group.count) * 100) / 100;
-      totalSum += avgScores[key];
+      // SCORE_NA(-1) 값을 제외하고 평균 계산
+      const validScores = group.scores
+        .map((s) => s[key] || 0)
+        .filter((v) => v !== -1);
+      if (validScores.length > 0) {
+        const sum = validScores.reduce((acc, v) => acc + v, 0);
+        avgScores[key] = Math.round((sum / validScores.length) * 100) / 100;
+        totalSum += avgScores[key];
+        validKeyCount++;
+      } else {
+        avgScores[key] = 0;
+      }
     }
 
     const totalAvg =
-      keys.length > 0
-        ? Math.round((totalSum / keys.length) * 100) / 100
+      validKeyCount > 0
+        ? Math.round((totalSum / validKeyCount) * 100) / 100
         : 0;
 
     await prisma.result.upsert({

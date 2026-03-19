@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { EVAL_QUESTIONS, SCORE_OPTIONS, SCORE_LABELS } from "@/lib/questions";
+import { EVAL_QUESTIONS, SCORE_OPTIONS, SCORE_NA } from "@/lib/questions";
 
 interface Employee {
   id: string;
@@ -170,7 +170,7 @@ export default function EvalPage({
   }
 
   async function submitAll() {
-    // 모든 대상에 대해 모든 문항이 채워졌는지 확인
+    // 모든 대상에 대해 모든 문항이 채워졌는지 확인 (평가 불가도 허용)
     for (const target of evalTargets) {
       const targetScores = scores[target.id];
       if (!targetScores) {
@@ -178,7 +178,7 @@ export default function EvalPage({
         return;
       }
       for (const q of EVAL_QUESTIONS) {
-        if (!targetScores[q.id]) {
+        if (targetScores[q.id] === undefined || targetScores[q.id] === 0) {
           toast.error(`${target.name}님의 "${q.text}" 항목이 비어있습니다`);
           return;
         }
@@ -338,38 +338,67 @@ export default function EvalPage({
                 <Badge variant="outline">{currentTarget.position}</Badge>
               </CardTitle>
               <CardDescription>
-                아래 항목에 대해 2~10점으로 평가해주세요 (항목당 10점, 총 100점)
+                아래 항목에 대해 1~10점으로 평가해주세요. 평가가 어려운 항목은 &quot;평가 불가&quot;를 체크하면 점수 산출에서 제외됩니다.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {EVAL_QUESTIONS.map((q) => (
-                <div key={q.id} className="space-y-2">
-                  <Label className="text-sm">
-                    <Badge variant="outline" className="mr-2">
-                      {q.category}
-                    </Badge>
-                    {q.text}
-                  </Label>
-                  <div className="flex gap-2">
-                    {SCORE_OPTIONS.map((score) => (
-                      <Button
-                        key={score}
-                        variant={
-                          scores[currentTarget.id]?.[q.id] === score
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => setScore(currentTarget.id, q.id, score)}
+              {EVAL_QUESTIONS.map((q) => {
+                const isNA = scores[currentTarget.id]?.[q.id] === SCORE_NA;
+                return (
+                  <div key={q.id} className="space-y-2">
+                    <Label className="text-sm">
+                      <Badge variant="outline" className="mr-2">
+                        {q.category}
+                      </Badge>
+                      {q.text}
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SCORE_OPTIONS.map((score) => (
+                        <Button
+                          key={score}
+                          variant={
+                            scores[currentTarget.id]?.[q.id] === score
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          className="w-9 h-9 p-0"
+                          disabled={isNA}
+                          onClick={() => setScore(currentTarget.id, q.id, score)}
+                        >
+                          {score}
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id={`na-${currentTarget.id}-${q.id}`}
+                        checked={isNA}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setScore(currentTarget.id, q.id, SCORE_NA);
+                          } else {
+                            setScores((prev) => {
+                              const copy = { ...prev };
+                              if (copy[currentTarget.id]) {
+                                const { [q.id]: _, ...rest } = copy[currentTarget.id];
+                                copy[currentTarget.id] = rest;
+                              }
+                              return copy;
+                            });
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`na-${currentTarget.id}-${q.id}`}
+                        className="text-xs text-muted-foreground cursor-pointer"
                       >
-                        <span className="hidden sm:inline">{SCORE_LABELS[score]}</span>
-                        <span className="sm:hidden">{score}</span>
-                      </Button>
-                    ))}
+                        평가 불가
+                      </label>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <Separator />
 
