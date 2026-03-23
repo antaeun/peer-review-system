@@ -503,13 +503,19 @@ export default function EmployeesPage() {
             </div>
             <div className="space-y-2">
               <Label>직급 *</Label>
-              <Input
+              <select
+                className={selectClass}
                 value={formData.position}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, position: e.target.value }))
                 }
-                placeholder="시니어 마케터"
-              />
+              >
+                <option value="">직급을 선택하세요</option>
+                <option value="어시스트매니저">어시스트매니저</option>
+                <option value="매니저">매니저</option>
+                <option value="시니어매니저">시니어매니저</option>
+                <option value="디렉터">디렉터</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label>역할</Label>
