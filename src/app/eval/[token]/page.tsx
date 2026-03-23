@@ -497,14 +497,24 @@ export default function EvalPage({
 
               <div className="flex gap-2 justify-between pt-4">
                 <div className="flex gap-2">
-                  {currentIdx > 0 && (
+                  {currentIdx === 0 && isPeer ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep("exclusion");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    >
+                      제외 설정으로
+                    </Button>
+                  ) : currentIdx > 0 ? (
                     <Button
                       variant="outline"
                       onClick={goToPrev}
                     >
                       이전
                     </Button>
-                  )}
+                  ) : null}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={saveDraft}>
