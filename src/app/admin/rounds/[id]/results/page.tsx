@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Download } from "lucide-react";
-import { EVAL_QUESTIONS } from "@/lib/questions";
+import { getTemplate, type TemplateId, type EvalTemplate } from "@/lib/questions";
 
 interface ResultItem {
   id: string;
@@ -39,7 +39,7 @@ interface AnonResponse {
 }
 
 interface RoundData {
-  round: { id: string; title: string; status: string };
+  round: { id: string; title: string; status: string; template: TemplateId };
   results: ResultItem[];
   anonResponses: AnonResponse[];
 }
@@ -53,19 +53,20 @@ function downloadTeamCSV(
   team: string,
   results: ResultItem[],
   anonResponses: AnonResponse[],
-  roundTitle: string
+  roundTitle: string,
+  tmpl: EvalTemplate
 ) {
   const BOM = "\uFEFF";
+  const isPeer = tmpl.id === "peer";
   const headers = [
     "순위",
     "이름",
     "직급",
     "총점(100점)",
-    "항목평균",
+    `항목평균(${tmpl.maxScore}점)`,
     "평가수",
-    ...EVAL_QUESTIONS.map((q) => q.text),
-    "강점(익명)",
-    "개선점(익명)",
+    ...tmpl.questions.map((q) => q.text),
+    ...(isPeer ? ["강점(익명)", "개선점(익명)"] : ["코멘트(익명)"]),
   ];
 
   const rows = results.map((r, i) => {
@@ -86,12 +87,11 @@ function downloadTeamCSV(
       r.totalAvg.toFixed(1),
       getItemAvg(r).toFixed(1),
       r.evalCount,
-      ...EVAL_QUESTIONS.map((q) => {
+      ...tmpl.questions.map((q) => {
         const v = r.avgScores[q.id];
         return v === undefined || v === null ? "-" : v === 0 ? "N/A" : v.toFixed(2);
       }),
-      strengths,
-      improvements,
+      ...(isPeer ? [strengths, improvements] : [strengths]),
     ];
   });
 
@@ -137,6 +137,8 @@ export default function ResultsPage({
 
   if (!data) return <div className="p-8">로딩 중...</div>;
 
+  const tmpl = getTemplate(data.round.template || "peer");
+
   // 팀별 그룹화
   const teamGroups = new Map<string, ResultItem[]>();
   for (const r of data.results) {
@@ -169,7 +171,7 @@ export default function ResultsPage({
             variant="outline"
             size="sm"
             onClick={() =>
-              downloadTeamCSV("전체", data.results, data.anonResponses, data.round.title)
+              downloadTeamCSV("전체", data.results, data.anonResponses, data.round.title, tmpl)
             }
           >
             <Download className="mr-2 h-4 w-4" />
@@ -190,7 +192,7 @@ export default function ResultsPage({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    downloadTeamCSV(team, teamResults, data.anonResponses, data.round.title)
+                    downloadTeamCSV(team, teamResults, data.anonResponses, data.round.title, tmpl)
                   }
                 >
                   <Download className="mr-2 h-4 w-4" />
@@ -206,7 +208,7 @@ export default function ResultsPage({
                     <TableHead>이름</TableHead>
                     <TableHead>직급</TableHead>
                     <TableHead>총점 (100점)</TableHead>
-                    <TableHead>항목 평균</TableHead>
+                    <TableHead>항목 평균 ({tmpl.maxScore}점)</TableHead>
                     <TableHead>평가 수</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -257,7 +259,7 @@ export default function ResultsPage({
                     <span className="text-sm font-normal text-muted-foreground"> / 100점</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    항목 평균 {getItemAvg(selectedResult).toFixed(1)}점 · 평가자 {selectedResult.evalCount}명
+                    항목 평균 {getItemAvg(selectedResult).toFixed(1)}점 ({tmpl.maxScore}점 만점) · 평가자 {selectedResult.evalCount}명
                   </div>
                 </div>
               </div>
@@ -268,11 +270,11 @@ export default function ResultsPage({
                   <TableRow>
                     <TableHead>항목</TableHead>
                     <TableHead>카테고리</TableHead>
-                    <TableHead>평균 점수</TableHead>
+                    <TableHead>평균 점수 ({tmpl.maxScore}점)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {EVAL_QUESTIONS.map((q) => (
+                  {tmpl.questions.map((q) => (
                     <TableRow key={q.id}>
                       <TableCell className="text-sm">{q.text}</TableCell>
                       <TableCell>
@@ -293,7 +295,9 @@ export default function ResultsPage({
                     <div key={c.id} className="border rounded-md p-4 space-y-2">
                       {c.strength && (
                         <div>
-                          <span className="text-sm font-medium text-green-600">강점: </span>
+                          <span className="text-sm font-medium text-green-600">
+                            {tmpl.id === "peer" ? "강점: " : "코멘트: "}
+                          </span>
                           <span className="text-sm">{c.strength}</span>
                         </div>
                       )}

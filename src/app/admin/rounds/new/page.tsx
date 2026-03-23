@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { TEMPLATES, type TemplateId } from "@/lib/questions";
 
 export default function NewRoundPage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function NewRoundPage() {
     const form = new FormData(e.currentTarget);
     const data = {
       title: form.get("title"),
+      template: form.get("template"),
       startDate: form.get("startDate"),
       endDate: form.get("endDate"),
       message: form.get("message"),
@@ -65,6 +67,20 @@ export default function NewRoundPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="template">평가 유형</Label>
+                <select
+                  id="template"
+                  name="template"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  defaultValue="peer"
+                >
+                  {Object.values(TEMPLATES).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">라운드 이름</Label>
                 <Input

@@ -23,11 +23,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { title, startDate, endDate, message } = body;
+  const { title, startDate, endDate, message, template } = body;
 
   const round = await prisma.evalRound.create({
     data: {
       title,
+      template: template || "peer",
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       message: message || null,

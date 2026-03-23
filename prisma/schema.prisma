@@ -40,6 +40,7 @@ model Employee {
 model EvalRound {
   id        String      @id @default(cuid())
   title     String
+  template  String      @default("peer")
   startDate DateTime
   endDate   DateTime
   status    RoundStatus @default(DRAFT)

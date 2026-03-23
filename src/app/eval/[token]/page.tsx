@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { EVAL_QUESTIONS, SCORE_OPTIONS, SCORE_NA } from "@/lib/questions";
+import { getTemplate, SCORE_NA, type TemplateId } from "@/lib/questions";
 
 interface Employee {
   id: string;
@@ -27,6 +27,7 @@ interface Employee {
 interface EvalData {
   evaluator: Employee;
   round: { id: string; title: string; message: string | null; endDate: string };
+  template: TemplateId;
   isSubmitted: boolean;
   exclusionConfirmed: boolean;
   teammates: Employee[];
@@ -74,9 +75,10 @@ export default function EvalPage({
       })
       .then((d: EvalData) => {
         setData(d);
+        // 콘텐츠팀 평가는 제외 단계 건너뛰기
         if (d.isSubmitted) {
           setStep("done");
-        } else if (d.exclusionConfirmed) {
+        } else if (d.template === "content" || d.exclusionConfirmed) {
           setStep("evaluate");
         }
         // 기존 제외 로드
@@ -117,6 +119,7 @@ export default function EvalPage({
 
   if (!data) return <div className="p-8 text-center">로딩 중...</div>;
 
+  const tmpl = getTemplate(data.template);
   const evalTargets = data.teammates.filter((t) => !excludedIds.has(t.id));
   const currentTarget = evalTargets[currentIdx];
 
@@ -158,7 +161,7 @@ export default function EvalPage({
       toast.error("모든 항목을 평가해주세요");
       return false;
     }
-    for (const q of EVAL_QUESTIONS) {
+    for (const q of tmpl.questions) {
       if (targetScores[q.id] === undefined || targetScores[q.id] === 0) {
         toast.error(`"${q.text}" 항목을 평가해주세요`);
         return false;
@@ -204,7 +207,7 @@ export default function EvalPage({
         toast.error(`${target.name}님의 평가가 비어있습니다`);
         return;
       }
-      for (const q of EVAL_QUESTIONS) {
+      for (const q of tmpl.questions) {
         if (targetScores[q.id] === undefined || targetScores[q.id] === 0) {
           toast.error(`${target.name}님의 "${q.text}" 항목이 비어있습니다`);
           return;
@@ -255,7 +258,7 @@ export default function EvalPage({
     );
   }
 
-  // Step: 제외 대상 설정
+  // Step: 제외 대상 설정 (전직원 평가만)
   if (step === "exclusion") {
     return (
       <div className="min-h-screen bg-background p-4">
@@ -330,6 +333,8 @@ export default function EvalPage({
   }
 
   // Step: 평가 작성
+  const isPeer = data.template === "peer";
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -338,7 +343,7 @@ export default function EvalPage({
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                {data.evaluator.name}님의 동료 평가
+                {data.evaluator.name}님의 {tmpl.name}
               </span>
               <span className="text-sm font-medium">
                 {currentIdx + 1} / {evalTargets.length}명
@@ -365,11 +370,14 @@ export default function EvalPage({
                 <Badge variant="outline">{currentTarget.position}</Badge>
               </CardTitle>
               <CardDescription>
-                아래 항목에 대해 1~10점으로 평가해주세요. 평가가 어려운 항목은 &quot;평가 불가&quot;를 체크하면 점수 산출에서 제외됩니다.
+                {isPeer
+                  ? <>아래 항목에 대해 1~{tmpl.maxScore}점으로 평가해주세요. 평가가 어려운 항목은 &quot;평가 불가&quot;를 체크하면 점수 산출에서 제외됩니다.</>
+                  : <>아래 항목에 대해 1~{tmpl.maxScore}점으로 평가해주세요.</>
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {EVAL_QUESTIONS.map((q) => {
+              {tmpl.questions.map((q) => {
                 const isNA = scores[currentTarget.id]?.[q.id] === SCORE_NA;
                 return (
                   <div key={q.id} className="space-y-2">
@@ -380,7 +388,7 @@ export default function EvalPage({
                       {q.text}
                     </Label>
                     <div className="flex flex-wrap gap-1.5">
-                      {SCORE_OPTIONS.map((score) => (
+                      {tmpl.scoreOptions.map((score) => (
                         <Button
                           key={score}
                           variant={
@@ -389,75 +397,103 @@ export default function EvalPage({
                               : "outline"
                           }
                           size="sm"
-                          className="w-9 h-9 p-0"
+                          className={isPeer ? "w-9 h-9 p-0" : "h-9 px-3"}
                           disabled={isNA}
                           onClick={() => setScore(currentTarget.id, q.id, score)}
                         >
-                          {score}
+                          {tmpl.scoreLabels ? (
+                            <>
+                              <span className="hidden sm:inline">{tmpl.scoreLabels[score]}</span>
+                              <span className="sm:hidden">{score}</span>
+                            </>
+                          ) : (
+                            score
+                          )}
                         </Button>
                       ))}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`na-${currentTarget.id}-${q.id}`}
-                        checked={isNA}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setScore(currentTarget.id, q.id, SCORE_NA);
-                          } else {
-                            setScores((prev) => {
-                              const copy = { ...prev };
-                              if (copy[currentTarget.id]) {
-                                const { [q.id]: _, ...rest } = copy[currentTarget.id];
-                                copy[currentTarget.id] = rest;
-                              }
-                              return copy;
-                            });
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor={`na-${currentTarget.id}-${q.id}`}
-                        className="text-xs text-muted-foreground cursor-pointer"
-                      >
-                        평가 불가
-                      </label>
-                    </div>
+                    {tmpl.hasNaOption && (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`na-${currentTarget.id}-${q.id}`}
+                          checked={isNA}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setScore(currentTarget.id, q.id, SCORE_NA);
+                            } else {
+                              setScores((prev) => {
+                                const copy = { ...prev };
+                                if (copy[currentTarget.id]) {
+                                  const { [q.id]: _, ...rest } = copy[currentTarget.id];
+                                  copy[currentTarget.id] = rest;
+                                }
+                                return copy;
+                              });
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`na-${currentTarget.id}-${q.id}`}
+                          className="text-xs text-muted-foreground cursor-pointer"
+                        >
+                          평가 불가
+                        </label>
+                      </div>
+                    )}
                   </div>
                 );
               })}
 
               <Separator />
 
-              <div className="space-y-2">
-                <Label>이 동료의 강점은 무엇인가요? (선택)</Label>
-                <Textarea
-                  value={strengths[currentTarget.id] || ""}
-                  onChange={(e) =>
-                    setStrengths((prev) => ({
-                      ...prev,
-                      [currentTarget.id]: e.target.value,
-                    }))
-                  }
-                  placeholder="구체적인 사례와 함께 작성해주세요"
-                  rows={3}
-                />
-              </div>
+              {isPeer ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>이 동료의 강점은 무엇인가요? (선택)</Label>
+                    <Textarea
+                      value={strengths[currentTarget.id] || ""}
+                      onChange={(e) =>
+                        setStrengths((prev) => ({
+                          ...prev,
+                          [currentTarget.id]: e.target.value,
+                        }))
+                      }
+                      placeholder="구체적인 사례와 함께 작성해주세요"
+                      rows={3}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>개선이 필요한 점은 무엇인가요? (선택)</Label>
-                <Textarea
-                  value={improvements[currentTarget.id] || ""}
-                  onChange={(e) =>
-                    setImprovements((prev) => ({
-                      ...prev,
-                      [currentTarget.id]: e.target.value,
-                    }))
-                  }
-                  placeholder="건설적인 피드백을 작성해주세요"
-                  rows={3}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label>개선이 필요한 점은 무엇인가요? (선택)</Label>
+                    <Textarea
+                      value={improvements[currentTarget.id] || ""}
+                      onChange={(e) =>
+                        setImprovements((prev) => ({
+                          ...prev,
+                          [currentTarget.id]: e.target.value,
+                        }))
+                      }
+                      placeholder="건설적인 피드백을 작성해주세요"
+                      rows={3}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label>{tmpl.subjectivePrompt} (선택)</Label>
+                  <Textarea
+                    value={strengths[currentTarget.id] || ""}
+                    onChange={(e) =>
+                      setStrengths((prev) => ({
+                        ...prev,
+                        [currentTarget.id]: e.target.value,
+                      }))
+                    }
+                    placeholder="자유롭게 작성해주세요"
+                    rows={4}
+                  />
+                </div>
+              )}
 
               <div className="flex gap-2 justify-between pt-4">
                 <div className="flex gap-2">

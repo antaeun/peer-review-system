@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { CONTENT_TEAM_NAME } from "@/lib/questions";
 
 // 토큰으로 평가 정보 조회
 export async function GET(
@@ -27,11 +28,16 @@ export async function GET(
     );
   }
 
-  // 자기 자신을 제외한 모든 활성 직원
+  const template = evalToken.round.template || "peer";
+
+  // 콘텐츠팀 평가: 콘텐츠팀원만 평가 대상
+  // 전직원 평가: 자기 자신을 제외한 모든 활성 직원
   const teammates = await prisma.employee.findMany({
     where: {
-      id: { not: evalToken.employeeId },
       isActive: true,
+      ...(template === "content"
+        ? { team: CONTENT_TEAM_NAME }
+        : { id: { not: evalToken.employeeId } }),
     },
     orderBy: [{ team: "asc" }, { name: "asc" }],
   });
@@ -57,6 +63,7 @@ export async function GET(
   return NextResponse.json({
     evaluator: evalToken.employee,
     round: evalToken.round,
+    template,
     isSubmitted: evalToken.isSubmitted,
     exclusionConfirmed: evalToken.exclusionConfirmed,
     teammates,

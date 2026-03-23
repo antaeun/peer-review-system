@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getTemplate } from "@/lib/questions";
 
 // 평가 마감: 응답 익명화 + 결과 집계
 export async function POST(
@@ -70,9 +71,10 @@ export async function POST(
     }
 
     // 100점 만점 환산: (획득 점수 합 / 응답 문항 최대 점수) × 100
+    const tmpl = getTemplate(round.template || "peer");
     const totalAvg =
       validKeyCount > 0
-        ? Math.round((totalSum / (validKeyCount * 10)) * 100 * 100) / 100
+        ? Math.round((totalSum / (validKeyCount * tmpl.maxScore)) * 100 * 100) / 100
         : 0;
 
     await prisma.result.upsert({
