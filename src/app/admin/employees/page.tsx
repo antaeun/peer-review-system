@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Plus, Pencil, Trash2, PenLine } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, PenLine, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 const selectClass =
@@ -161,6 +161,23 @@ export default function EmployeesPage() {
     try {
       await fetch(`/api/employees/${emp.id}`, { method: "DELETE" });
       toast.success("비활성화 완료");
+      fetchEmployees();
+    } catch {
+      toast.error("처리에 실패했습니다");
+    }
+  }
+
+  async function handleReactivate(emp: Employee) {
+    if (!confirm(`${emp.name}님을 다시 활성화하시겠습니까?`)) return;
+
+    try {
+      const res = await fetch(`/api/employees/${emp.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${emp.name}님이 활성화되었습니다`);
       fetchEmployees();
     } catch {
       toast.error("처리에 실패했습니다");
@@ -335,6 +352,50 @@ export default function EmployeesPage() {
               </CardContent>
             </Card>
           ))
+        )}
+        {/* 비활성 직원 목록 */}
+        {inactiveEmployees.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                비활성 직원
+                <Badge variant="outline">{inactiveEmployees.length}명</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>이름</TableHead>
+                    <TableHead>이메일</TableHead>
+                    <TableHead>팀</TableHead>
+                    <TableHead>직급</TableHead>
+                    <TableHead className="w-24"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inactiveEmployees.map((emp) => (
+                    <TableRow key={emp.id} className="opacity-60">
+                      <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{emp.email}</TableCell>
+                      <TableCell>{emp.team}</TableCell>
+                      <TableCell>{emp.position}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReactivate(emp)}
+                        >
+                          <RotateCcw className="mr-1 h-3 w-3" />
+                          활성화
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
       </main>
 
