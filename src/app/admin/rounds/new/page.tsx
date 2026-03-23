@@ -22,11 +22,26 @@ export default function NewRoundPage() {
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
+    const startDate = form.get("startDate") as string;
+    const endDate = form.get("endDate") as string;
+
+    const today = new Date().toISOString().split("T")[0];
+    if (startDate < today) {
+      toast.error("시작일은 오늘 이후 날짜로 지정해주세요");
+      setLoading(false);
+      return;
+    }
+    if (endDate < startDate) {
+      toast.error("종료일은 시작일 이후로 지정해주세요");
+      setLoading(false);
+      return;
+    }
+
     const data = {
       title: form.get("title"),
       template: form.get("template"),
-      startDate: form.get("startDate"),
-      endDate: form.get("endDate"),
+      startDate,
+      endDate,
       message: form.get("message"),
     };
 

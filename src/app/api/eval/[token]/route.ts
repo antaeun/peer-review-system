@@ -28,6 +28,14 @@ export async function GET(
     );
   }
 
+  // 종료일 이후 평가 차단
+  if (new Date() > new Date(evalToken.round.endDate)) {
+    return NextResponse.json(
+      { error: "평가 기간이 종료되었습니다" },
+      { status: 400 }
+    );
+  }
+
   const template = evalToken.round.template || "peer";
 
   // 콘텐츠팀 평가: 콘텐츠팀원만 평가 대상

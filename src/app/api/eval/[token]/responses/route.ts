@@ -27,6 +27,10 @@ export async function POST(
     return NextResponse.json({ error: "Invalid or inactive" }, { status: 400 });
   }
 
+  if (new Date() > new Date(evalToken.round.endDate)) {
+    return NextResponse.json({ error: "평가 기간이 종료되었습니다" }, { status: 400 });
+  }
+
   if (evalToken.isSubmitted) {
     return NextResponse.json(
       { error: "Already submitted" },
