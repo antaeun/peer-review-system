@@ -24,6 +24,16 @@ export async function POST(req: NextRequest) {
 
     const existing = await prisma.employee.findUnique({ where: { email } });
     if (existing) {
+      if (!existing.isActive) {
+        return NextResponse.json(
+          {
+            error: "inactive_exists",
+            message: `비활성화된 직원(${existing.name})이 동일한 이메일로 등록되어 있습니다.`,
+            employee: existing,
+          },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({ error: "이미 등록된 이메일입니다" }, { status: 400 });
     }
 

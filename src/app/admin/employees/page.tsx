@@ -143,9 +143,30 @@ export default function EmployeesPage() {
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || "등록 실패");
+          if (data.error === "inactive_exists" && data.employee) {
+            const emp = data.employee;
+            const action = confirm(
+              `비활성화된 직원 "${emp.name}" (${emp.email})이 동일한 이메일로 등록되어 있습니다.\n\n` +
+              `[확인] 기존 직원을 재활성화하고 정보를 업데이트합니다.\n` +
+              `[취소] 등록을 취소합니다.`
+            );
+            if (action) {
+              const patchRes = await fetch(`/api/employees/${emp.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...formData, isActive: true }),
+              });
+              if (!patchRes.ok) throw new Error("재활성화에 실패했습니다");
+              toast.success(`${formData.name}님이 재활성화되었습니다`);
+            } else {
+              return;
+            }
+          } else {
+            throw new Error(data.error || "등록 실패");
+          }
+        } else {
+          toast.success("직원이 등록되었습니다");
         }
-        toast.success("직원이 등록되었습니다");
       }
       setDialogOpen(false);
       resetForm();
