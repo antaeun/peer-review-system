@@ -75,10 +75,9 @@ export default function EvalPage({
       })
       .then((d: EvalData) => {
         setData(d);
-        // 콘텐츠팀 평가는 제외 단계 건너뛰기
         if (d.isSubmitted) {
           setStep("done");
-        } else if (d.template === "content" || d.exclusionConfirmed) {
+        } else if (d.exclusionConfirmed) {
           setStep("evaluate");
         }
         // 기존 제외 로드
@@ -497,7 +496,7 @@ export default function EvalPage({
 
               <div className="flex gap-2 justify-between pt-4">
                 <div className="flex gap-2">
-                  {currentIdx === 0 && isPeer ? (
+                  {currentIdx === 0 ? (
                     <Button
                       variant="outline"
                       onClick={() => {

@@ -75,7 +75,7 @@ export const TEMPLATES: Record<TemplateId, EvalTemplate> = {
     scoreOptions: CONTENT_SCORE_OPTIONS as unknown as readonly number[],
     maxScore: CONTENT_MAX_SCORE,
     scoreLabels: CONTENT_SCORE_LABELS,
-    hasNaOption: false,
+    hasNaOption: true,
     subjectivePrompt: CONTENT_SUBJECTIVE,
   },
 };
