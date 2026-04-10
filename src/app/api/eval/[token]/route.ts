@@ -38,13 +38,13 @@ export async function GET(
 
   const template = evalToken.round.template || "peer";
 
-  // 콘텐츠팀 평가: 콘텐츠팀원만 평가 대상
+  // 콘텐츠팀 평가: 콘텐츠팀원만 평가 대상 (팀장 제외)
   // 전직원 평가: 자기 자신을 제외한 모든 활성 직원
   const teammates = await prisma.employee.findMany({
     where: {
       isActive: true,
       ...(template === "content"
-        ? { team: CONTENT_TEAM_NAME }
+        ? { team: CONTENT_TEAM_NAME, role: { notIn: ["MANAGER", "ADMIN"] } }
         : { id: { not: evalToken.employeeId } }),
     },
     orderBy: [{ team: "asc" }, { name: "asc" }],
